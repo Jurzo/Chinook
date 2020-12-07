@@ -2,13 +2,14 @@ package servlet;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.Gson;
 
 import database.JDBCShoppingListItemDao;
 import model.ShoppingListItem;
@@ -20,7 +21,7 @@ public class ShoppingListServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     	
-    	req.setAttribute("list", getItems());
+    	req.setAttribute("items", getItems());
 
         req.getRequestDispatcher("/WEB-INF/list.jsp").forward(req, resp);
     }
@@ -32,8 +33,21 @@ public class ShoppingListServlet extends HttpServlet {
     	resp.sendRedirect("/list");
     }
     
-    private List<String> getItems() {
-    	return this.db.getAllItems().stream().map(item -> item.getTitle()).collect(Collectors.toList());
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        long id = Long.valueOf(req.getParameter("id"));
+        ShoppingListItem item = db.getItem(id);
+        
+        if (item != null) db.removeItem(item);
+        
+        String json = new Gson().toJson(item);
+        
+        resp.setContentType("application/json; charset=UTF-8");
+        resp.getWriter().println(json);
+    }
+    
+    private List<ShoppingListItem> getItems() {
+    	return this.db.getAllItems();
     }
     
 }
