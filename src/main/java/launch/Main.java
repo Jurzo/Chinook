@@ -37,7 +37,7 @@ public class Main {
 
         // HUOM! Jos haluat, että palvelin käynnistää itsensä uudelleen muutettuasi
         // tiedostoja, poista kommentti seuraavalta riviltä:
-        // webApp.setReloadable(true);
+        webApp.setReloadable(true);
 
         // Määritellään sovelluksemme resurssien sijainnit:
         WebResourceRoot resources = new StandardRoot(webApp);
