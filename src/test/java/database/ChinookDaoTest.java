@@ -17,8 +17,8 @@ import model.Artist;
 
 class ChinookDaoTest {
 
-    private static final String SRC_URL = System.getenv("SRC");
-    private static final String TEST_URL = System.getenv("TEST");
+    private static final String SRC_URL = "chinook.sqlite";
+    private static final String TEST_URL = "chinookTest.sqlite";
     private ChinookDao dao;
 
 
