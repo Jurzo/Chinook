@@ -2,80 +2,77 @@ package database;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import model.ShoppingListItem;
+import model.Album;
+import model.Artist;
 
-class JDBCShoppingListItemDaoTest {
+class ChinookDaoTest {
 
+    private static final String SRC_URL = System.getenv("SRC");
     private static final String TEST_URL = System.getenv("TEST");
-    private JDBCShoppingListItemDao dao = new JDBCShoppingListItemDao(TEST_URL);
-    private ShoppingListItem milk = new ShoppingListItem(1, "Milk");
-    private ShoppingListItem eggs = new ShoppingListItem(2, "Eggs");
-    private ShoppingListItem bread = new ShoppingListItem(3, "Bread");
+    private ChinookDao dao;
 
-    /**
-     * This method clears the test database and inserts two rows directly in the
-     * database before each test with a delete statement.
-     * 
-     * This way every time the tests are executed they have exactly the same data to
-     * work with.
-     * 
-     * !! Make sure to always use a different database environment variable for each
-     * execution environment to prevent data loss or corruption !!
-     */
+
+    //Kopioidaan Chinook-tietiokanta, että sitä voidaan testata muuttamatta alkuperäistä tietokantaa
+    
     @BeforeEach
-    public void setUp() throws Exception {
-    	dao.getAllItems().forEach(item -> dao.removeItem(item));
-        dao.addItem(milk);
-        dao.addItem(eggs);
-        dao.addItem(bread);
+    public void setup() {
+    	InputStream is = null;
+        OutputStream os = null;
+        try {
+            is = new FileInputStream(SRC_URL);
+            os = new FileOutputStream(TEST_URL);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) > 0) {
+                os.write(buffer, 0, length);
+            }
+            is.close();
+            os.close();
+            
+        } catch (IOException e) {
+        	System.out.println(e);
+        }
+        
+        this.dao = new ChinookDao("jdbc:sqlite:" + TEST_URL);
     }
     
-    @Test
-    public void testItemAdded1() {
-    	assertTrue(dao.getItem(milk.getId()).equals(milk));
-    }
     
     @Test
-    public void testItemAdded2() {
-    	assertTrue(dao.getItem(eggs.getId()).equals(eggs));
-    }
-    
-    @Test
-    public void testItemAdded3() {
-    	assertTrue(dao.getItem(bread.getId()).equals(bread));
-    }
-    
-    @Test
-    public void testMultipleItemsAdded() {
-    	dao.getAllItems().forEach(item -> dao.removeItem(item));
-    	dao.addItem(bread);
-    	dao.addItem(milk);
-    	assertTrue(dao.getItem(bread.getId()).equals(bread) && dao.getItem(milk.getId()).equals(milk));
-    }
-    
-    @Test
-    public void removeItem() {
-    	dao.getAllItems().forEach(item -> dao.removeItem(item));
-    	dao.addItem(bread);
-    	assertTrue(dao.getItem(bread.getId()).equals(bread));
-    	dao.removeItem(bread);
-    	assertTrue(dao.getItem(bread.getId()) == null);
-    }
-    
-    @Test
-    public void listItems() {
-    	dao.getAllItems().forEach(item -> dao.removeItem(item));
-    	ShoppingListItem[] items = {milk, eggs, bread};
+    public void ArtistsListWorks() {
+    	List<Artist> artistit = dao.getAllArtists();
     	
-    	for (ShoppingListItem item : items) {
-    		dao.addItem(item);
-    	}
-    	
-    	for (ShoppingListItem item : items) {
-    		assertTrue(dao.getItem(item.getId()).equals(item));
+    	assertTrue(!artistit.isEmpty());
+    }
+    
+    @Test
+    public void AddArtist() {
+    	Artist artist = new Artist(1, "Testiartisti");
+    	dao.addArtist(artist);
+    	assertTrue(dao.getArtistsByName(artist.getName()).contains(artist));
+    }
+    
+    @Test
+    public void checkCleanTestDB() {
+    	ChinookDao dao2 = new ChinookDao("jdbc:sqlite:" + SRC_URL);
+    	assertTrue(dao.getAllArtists().containsAll(dao2.getAllArtists()));
+    }
+    
+    @Test
+    public void checkArtistAlbums() {
+    	Artist artist = dao.getArtist(3);
+    	List<Album> albums = dao.getAlbumsByArtist(artist.getId());
+    	for (Album album : albums) {
+    		assertTrue(album.getArtistId() == artist.getId());
     	}
     }
 }
